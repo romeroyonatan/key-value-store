@@ -1,7 +1,5 @@
 from typing import Any
 
-from keyvaluestore.operations import SetKey, Unset
-
 
 class KeyValueStoreSystem:
     class TransactionConflict(RuntimeError):
@@ -87,3 +85,22 @@ class Transaction:
         return sum(
             value == a_value for value in self._local_storage.values()
         ) + self._system.number_of_keys_with_value(a_value)
+
+
+class SetKey:
+    def __init__(self, key, old_value, new_value):
+        self._key = key
+        self._old_value = old_value
+        self._new_value = new_value
+
+    def apply_on(self, system):
+        system.set_key(self._key, self._old_value, self._new_value)
+
+
+class Unset:
+    def __init__(self, key, old_value):
+        self._key = key
+        self._old_value = old_value
+
+    def apply_on(self, system):
+        system.unset_key(self._key, self._old_value)
