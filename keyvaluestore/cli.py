@@ -47,22 +47,24 @@ class KeyValueStoreCLI:
                 line = self._input.readline()
 
     def _process_line(self, line):
-        command = line.split()[0]
+        command = line.split()[0].upper()
         try:
             if command == "BEGIN":
                 self._begin()
-            if command == "SET":
+            elif command == "SET":
                 self._set(line)
-            if command == "GET":
+            elif command == "GET":
                 self._get(line)
-            if command == "UNSET":
+            elif command == "UNSET":
                 self._unset(line)
-            if command == "NUMEQUALTO":
+            elif command == "NUMEQUALTO":
                 self._numequalto(line)
-            if command == "COMMIT":
+            elif command == "COMMIT":
                 self._commit()
-            if command == "END":
+            elif command == "END":
                 self._end()
+            else:
+                self._output.write(f"ERROR: Unknown command '{command}'\n")
         except TransactionIsMissing:
             self._output.write(f"{KeyValueStoreCLI.ERROR_TRANSACTION_IS_MISSING}\n")
 

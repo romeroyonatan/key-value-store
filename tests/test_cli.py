@@ -95,7 +95,7 @@ class CliTests(TestCase):
         SET hello world
         UNSET hello
         COMMIT
-        END
+        end
         """
 
         expected = textwrap.dedent(
@@ -136,6 +136,29 @@ class CliTests(TestCase):
             ERROR: Enter BEGIN command to start
             ERROR: Enter BEGIN command to start
             ERROR: Enter BEGIN command to start
+            """
+        ).strip()
+        cli_input = io.StringIO()
+        cli_input.write(commands)
+        cli_input.seek(0)
+
+        cli_output = io.StringIO()
+
+        cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
+        cli.run()
+
+        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
+
+        self.assertEqual(actual, expected)
+
+    def test_unknown_command(self):
+        commands = """
+        beggint
+        """
+
+        expected = textwrap.dedent(
+            """
+            ERROR: Unknown command 'BEGGINT'
             """
         ).strip()
         cli_input = io.StringIO()
