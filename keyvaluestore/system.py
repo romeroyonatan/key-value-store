@@ -49,6 +49,8 @@ class Transaction:
         self._init()
 
     def set(self, key, value):
+        if key in self._unset_keys:
+            self._unset_keys.remove(key)
         old_value = self.get(key, KeyValueStoreSystem.NEW_KEY)
         self._operations.append(SetKey(key, old_value=old_value, new_value=value))
         self._local_storage[key] = value

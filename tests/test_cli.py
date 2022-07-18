@@ -138,6 +138,19 @@ class CliTests(TestCase):
             .do_it()
         )
 
+    def test_set_unset_and_set_again(self):
+        (
+            given_a_CLI()
+            .type("BEGIN")
+            .type("SET hello world")
+            .type("UNSET hello")
+            .type("SET hello you")
+            .type("GET hello")
+            .expect("you")
+            .type("END")
+            .do_it()
+        )
+
 
 class CLITestRunner:
     def __init__(self):
