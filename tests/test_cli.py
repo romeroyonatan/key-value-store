@@ -154,7 +154,7 @@ class CLITestRunner:
         self._expected[command_index] = expected_output.removesuffix("\n")
         return self
 
-    def do_it(self):
+    def do_it(self) -> None:
         self._do_it_not_called = False
         cli_input = io.StringIO(initial_value="\n".join(self._commands))
         cli_output = io.StringIO()
@@ -182,10 +182,10 @@ class CLITestRunner:
         for command_index, command_output in enumerate(command_outputs):
             if command_index in self._expected:
                 command = self._commands[command_index - 1]
-                expected = self._expected[command_index]
+                expected_output = self._expected[command_index]
 
-                if expected != command_output:
-                    raise AssertionError(f"{command}: Expected {expected !r}, but got {command_output!r}")
+                if expected_output != command_output:
+                    raise AssertionError(f"{command}: Expected {expected_output !r}, but got {command_output!r}")
 
     def __del__(self):
         if self._do_it_not_called:
