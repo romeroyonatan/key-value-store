@@ -99,8 +99,12 @@ class KeyValueStoreCLI:
     def _get(self, line):
         self._assert_number_of_arguments_equal_to(1, line)
         _, key = line.split()
-        value = self._transaction.get(key)
-        self._output.write(f"{value}\n")
+        try:
+            value = self._transaction.get(key)
+            self._output.write(f"{value}\n")
+        except KeyError:
+            self._output.write("(NULL)\n")
+
 
     def _unset(self, line):
         self._assert_number_of_arguments_equal_to(1, line)

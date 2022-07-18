@@ -270,3 +270,30 @@ class CliTests(TestCase):
         actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
 
         self.assertEqual(actual, expected)
+
+    def test_get_an_inexistent_key_display_null(self):
+        commands = """
+        BEGIN
+        GET nonexistent
+        END
+        """
+
+        expected = textwrap.dedent(
+            """
+            OK
+            (NULL)
+            Good bye
+            """
+        ).strip()
+        cli_input = io.StringIO()
+        cli_input.write(commands)
+        cli_input.seek(0)
+
+        cli_output = io.StringIO()
+
+        cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
+        cli.run()
+
+        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
+
+        self.assertEqual(actual, expected)
