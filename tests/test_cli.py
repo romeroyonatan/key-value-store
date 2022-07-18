@@ -7,7 +7,7 @@ from keyvaluestore.system import KeyValueStoreSystem
 
 
 class CliTests(TestCase):
-    def test1(self):
+    def test_show_help_at_the_begginng(self):
         cli_input = io.StringIO()
         cli_input.seek(0)
 
@@ -52,7 +52,7 @@ class CliTests(TestCase):
         cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
         cli.run()
 
-        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP):].strip()
+        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
 
         self.assertEqual(actual, expected)
 
@@ -85,7 +85,7 @@ class CliTests(TestCase):
         cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
         cli.run()
 
-        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP):].strip()
+        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
 
         self.assertEqual(actual, expected)
 
@@ -116,6 +116,37 @@ class CliTests(TestCase):
         cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
         cli.run()
 
-        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP):].strip()
+        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
+
+        self.assertEqual(actual, expected)
+
+    def test_display_an_error_is_transaction_is_missing(self):
+        commands = """
+        SET hello world
+        GET hello
+        UNSET hello
+        NUMEQUALTO world
+        COMMIT
+        """
+
+        expected = textwrap.dedent(
+            """
+            ERROR: Enter BEGIN command to start
+            ERROR: Enter BEGIN command to start
+            ERROR: Enter BEGIN command to start
+            ERROR: Enter BEGIN command to start
+            ERROR: Enter BEGIN command to start
+            """
+        ).strip()
+        cli_input = io.StringIO()
+        cli_input.write(commands)
+        cli_input.seek(0)
+
+        cli_output = io.StringIO()
+
+        cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
+        cli.run()
+
+        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
 
         self.assertEqual(actual, expected)
