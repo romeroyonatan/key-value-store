@@ -3,9 +3,7 @@ The purpose of this app create a simple key-value store in Python.
 All data will be stored in memory for simplicity.
 ## Run app
 ```
-$ python -m venv venv
-(venv) $ pip install -r requirements.txt
-(venv) $ python script.py
+$ python -m keyvaluestore
 
 🐍Welcome to the Simple Storage System!🐍
 

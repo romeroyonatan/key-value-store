@@ -154,8 +154,3 @@ class NoTransaction:
 
     def rollback(self):
         raise TransactionIsMissing
-
-
-if __name__ == "__main__":
-    cli = KeyValueStoreCLI(KeyValueStoreSystem())
-    cli.run()
