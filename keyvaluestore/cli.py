@@ -50,7 +50,7 @@ class KeyValueStoreCLI:
         command = line.split()[0].upper()
         try:
             if command == "BEGIN":
-                self._begin()
+                self._begin(line)
             elif command == "SET":
                 self._set(line)
             elif command == "GET":
@@ -60,46 +60,62 @@ class KeyValueStoreCLI:
             elif command == "NUMEQUALTO":
                 self._numequalto(line)
             elif command == "COMMIT":
-                self._commit()
+                self._commit(line)
             elif command == "END":
-                self._end()
+                self._end(line)
+            elif command == "HELP":
+                self._output.write(KeyValueStoreCLI.HELP)
             else:
                 self._output.write(f"ERROR: Unknown command '{command}'\n")
         except TransactionIsMissing:
             self._output.write(f"{KeyValueStoreCLI.ERROR_TRANSACTION_IS_MISSING}\n")
+        except ValueError as error:
+            self._output.write(f"ERROR: {error}\n")
 
-    def _begin(self):
+    def _begin(self, line):
+        self._assert_number_of_arguments_equal_to(0, line)
         self._transaction = self._system.begin()
         self._output.write("OK\n")
 
-    def _commit(self):
+    def _commit(self, line):
+        self._assert_number_of_arguments_equal_to(0, line)
         self._transaction.commit()
         self._transaction = NoTransaction()
         self._output.write("OK\n")
 
     def _set(self, line):
+        self._assert_number_of_arguments_equal_to(2, line)
         _, key, value = line.split()
         self._transaction.set(key, value)
         self._output.write(f"{key}={value}\n")
 
     def _get(self, line):
+        self._assert_number_of_arguments_equal_to(1, line)
         _, key = line.split()
         value = self._transaction.get(key)
         self._output.write(f"{value}\n")
 
     def _unset(self, line):
+        self._assert_number_of_arguments_equal_to(1, line)
         _, key = line.split()
         self._transaction.unset(key)
         self._output.write("OK\n")
 
     def _numequalto(self, line):
+        self._assert_number_of_arguments_equal_to(1, line)
         _, value = line.split()
         number = self._transaction.number_of_keys_with_value(value)
         self._output.write(f"{number}\n")
 
-    def _end(self):
+    def _end(self, line):
+        self._assert_number_of_arguments_equal_to(0, line)
         self._is_running = False
         self._output.write("Good bye\n")
+
+    def _assert_number_of_arguments_equal_to(self, expected, line):
+        actual = len(line.split()) - 1
+        if actual != expected:
+            raise ValueError(f"Expected {expected} arguments but got {actual}")
 
 
 class NoTransaction:

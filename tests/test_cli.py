@@ -173,3 +173,63 @@ class CliTests(TestCase):
         actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
 
         self.assertEqual(actual, expected)
+
+    def test_validate_parameters(self):
+        commands = """
+        SET hello
+        SET hello word world
+        GET
+        GET hello world
+        UNSET
+        UNSET hello world
+        NUMEQUALTO
+        COMMIT a
+        BEGIN a
+        END a
+        """
+
+        expected = textwrap.dedent(
+            """
+            ERROR: Expected 2 arguments but got 1
+            ERROR: Expected 2 arguments but got 3
+            ERROR: Expected 1 arguments but got 0
+            ERROR: Expected 1 arguments but got 2
+            ERROR: Expected 1 arguments but got 0
+            ERROR: Expected 1 arguments but got 2
+            ERROR: Expected 1 arguments but got 0
+            ERROR: Expected 0 arguments but got 1
+            ERROR: Expected 0 arguments but got 1
+            ERROR: Expected 0 arguments but got 1
+            """
+        ).strip()
+        cli_input = io.StringIO()
+        cli_input.write(commands)
+        cli_input.seek(0)
+
+        cli_output = io.StringIO()
+
+        cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
+        cli.run()
+
+        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
+
+        self.assertEqual(actual, expected)
+
+    def test_help(self):
+        commands = """
+        HELP
+        """
+
+        expected = KeyValueStoreCLI.HELP.strip()
+        cli_input = io.StringIO()
+        cli_input.write(commands)
+        cli_input.seek(0)
+
+        cli_output = io.StringIO()
+
+        cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
+        cli.run()
+
+        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
+
+        self.assertEqual(actual, expected)
