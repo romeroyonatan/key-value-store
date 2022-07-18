@@ -61,6 +61,8 @@ class KeyValueStoreCLI:
                 self._numequalto(line)
             elif command == "COMMIT":
                 self._commit(line)
+            elif command == "ROLLBACK":
+                self._rollback(line)
             elif command == "END":
                 self._end(line)
             elif command == "HELP":
@@ -81,6 +83,11 @@ class KeyValueStoreCLI:
         self._assert_number_of_arguments_equal_to(0, line)
         self._transaction.commit()
         self._transaction = NoTransaction()
+        self._output.write("OK\n")
+
+    def _rollback(self, line):
+        self._assert_number_of_arguments_equal_to(0, line)
+        self._transaction.rollback()
         self._output.write("OK\n")
 
     def _set(self, line):
@@ -132,6 +139,9 @@ class NoTransaction:
         raise TransactionIsMissing
 
     def commit(self):
+        raise TransactionIsMissing
+
+    def rollback(self):
         raise TransactionIsMissing
 
 
