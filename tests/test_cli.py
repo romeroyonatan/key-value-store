@@ -297,3 +297,75 @@ class CliTests(TestCase):
         actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
 
         self.assertEqual(actual, expected)
+
+    def test_unset_in_a_transaction(self):
+        commands = """
+        BEGIN
+        SET hello world
+        COMMIT
+        BEGIN
+        UNSET hello
+        GET hello
+        END
+        """
+
+        expected = textwrap.dedent(
+            """
+            OK
+            hello=world
+            OK
+            OK
+            OK
+            (NULL)
+            Good bye
+            """
+        ).strip()
+        cli_input = io.StringIO()
+        cli_input.write(commands)
+        cli_input.seek(0)
+
+        cli_output = io.StringIO()
+
+        cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
+        cli.run()
+
+        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
+
+        self.assertEqual(actual, expected)
+
+    def test_rollback_unset(self):
+        commands = """
+        BEGIN
+        SET hello world
+        COMMIT
+        BEGIN
+        UNSET hello
+        ROLLBACK
+        GET hello
+        END
+        """
+
+        expected = textwrap.dedent(
+            """
+            OK
+            hello=world
+            OK
+            OK
+            OK
+            OK
+            world
+            Good bye
+            """
+        ).strip()
+        cli_input = io.StringIO()
+        cli_input.write(commands)
+        cli_input.seek(0)
+
+        cli_output = io.StringIO()
+
+        cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
+        cli.run()
+
+        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
+
+        self.assertEqual(actual, expected)
