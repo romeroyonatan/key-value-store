@@ -1,4 +1,5 @@
 import sys
+import textwrap
 
 from keyvaluestore.system import KeyValueStoreSystem
 
@@ -8,26 +9,29 @@ class TransactionIsMissing(RuntimeError):
 
 
 class KeyValueStoreCLI:
-    HELP = """
-    🐍Welcome to the Simple Storage System!🐍
+    HELP = textwrap.dedent(
+        """
+        🐍Welcome to the Simple Storage System!🐍
 
-    You can use the following commands:
+        You can use the following commands:
 
-            BEGIN           🔸 start a new transaction
-                    SET             Set a key-value pair.
-                    UNSET           Unset a key
-                    GET             Get the value associated with a key.
-                    NUMEQUALTO      Returns the number of keys that are
-                                    associated with the given value.
-            COMMIT          🔸 commit the current transaction.
-            ROLLBACK        🔸 rollback the current
-                               transaction.
-            HELP            🔸 show this help message
-            END             🔸 end the program
-    Enter the command:  (HELP):
-            """
+                BEGIN           🔸 start a new transaction
+                        SET             Set a key-value pair.
+                        UNSET           Unset a key
+                        GET             Get the value associated with a key.
+                        NUMEQUALTO      Returns the number of keys that are
+                                        associated with the given value.
+                COMMIT          🔸 commit the current transaction.
+                ROLLBACK        🔸 rollback the current
+                                   transaction.
+                HELP            🔸 show this help message
+                END             🔸 end the program
+        Enter the command:  (HELP):
+        """
+    )
 
     ERROR_TRANSACTION_IS_MISSING = "ERROR: Enter BEGIN command to start"
+    PROMPT = ">>> "
 
     def __init__(self, system, cli_input=sys.stdin, cli_output=sys.stdout):
         self._input = cli_input
@@ -38,12 +42,16 @@ class KeyValueStoreCLI:
 
     def run(self):
         self._output.write(KeyValueStoreCLI.HELP)
+        self._output.write(KeyValueStoreCLI.PROMPT)
+        self._output.flush()
         line = self._input.readline()
         while self._is_running and line:
             line = line.strip()
             if line:
                 self._process_line(line)
             if self._is_running:
+                self._output.write(KeyValueStoreCLI.PROMPT)
+                self._output.flush()
                 line = self._input.readline()
 
     def _process_line(self, line):
@@ -66,7 +74,7 @@ class KeyValueStoreCLI:
             elif command == "END":
                 self._end(line)
             elif command == "HELP":
-                self._output.write(KeyValueStoreCLI.HELP)
+                self._output.write(f"{KeyValueStoreCLI.HELP}")
             else:
                 self._output.write(f"ERROR: Unknown command '{command}'\n")
         except TransactionIsMissing:
@@ -104,7 +112,6 @@ class KeyValueStoreCLI:
             self._output.write(f"{value}\n")
         except KeyError:
             self._output.write("(NULL)\n")
-
 
     def _unset(self, line):
         self._assert_number_of_arguments_equal_to(1, line)

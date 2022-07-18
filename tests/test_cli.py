@@ -1,5 +1,4 @@
 import io
-import textwrap
 from unittest import TestCase
 
 from keyvaluestore.cli import KeyValueStoreCLI
@@ -46,7 +45,6 @@ class CliTests(TestCase):
             .do_it()
         )
 
-
     def test_display_an_error_is_transaction_is_missing(self):
         (
             given_a_CLI()
@@ -66,12 +64,7 @@ class CliTests(TestCase):
         )
 
     def test_unknown_command(self):
-        (
-            given_a_CLI()
-            .type("banana")
-            .expect("ERROR: Unknown command 'BANANA'")
-            .do_it()
-        )
+        given_a_CLI().type("banana").expect("ERROR: Unknown command 'BANANA'").do_it()
 
     def test_validate_parameters(self):
         (
@@ -98,23 +91,7 @@ class CliTests(TestCase):
         )
 
     def test_help(self):
-        commands = """
-        HELP
-        """
-
-        expected = KeyValueStoreCLI.HELP.strip()
-        cli_input = io.StringIO()
-        cli_input.write(commands)
-        cli_input.seek(0)
-
-        cli_output = io.StringIO()
-
-        cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
-        cli.run()
-
-        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
-
-        self.assertEqual(actual, expected)
+        given_a_CLI().type("help").expect(KeyValueStoreCLI.HELP).do_it()
 
     def test_rollback(self):
         (
@@ -174,7 +151,7 @@ class CLITestRunner:
 
     def expect(self, expected_output) -> "CLITestRunner":
         command_index = len(self._commands)
-        self._expected[command_index] = expected_output
+        self._expected[command_index] = expected_output.removesuffix("\n")
         return self
 
     def do_it(self):
@@ -183,13 +160,32 @@ class CLITestRunner:
         cli_output = io.StringIO()
         cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
         cli.run()
-        output = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :]
-        command_index = 1
-        for line in output.split("\n"):
-            if command_index in self._expected and self._expected[command_index] != line:
+
+        command_outputs = self._get_command_outputs(cli_output)
+        self._check_assertions(command_outputs)
+
+    def _get_command_outputs(self, cli_output):
+        partial_output = []
+        command_outputs = []
+        cli_output.seek(0)
+        for line in cli_output.readlines():
+            line = line.removesuffix("\n")
+            if line.startswith(KeyValueStoreCLI.PROMPT):
+                command_outputs.append("\n".join(partial_output))
+                partial_output = [line.removeprefix(KeyValueStoreCLI.PROMPT)]
+            else:
+                partial_output.append(line)
+        assert command_outputs, "Command output expected"
+        return command_outputs
+
+    def _check_assertions(self, command_outputs):
+        for command_index, command_output in enumerate(command_outputs):
+            if command_index in self._expected:
                 command = self._commands[command_index - 1]
-                raise AssertionError(f"{command}: Expected {self._expected[command_index]!r}, but got {line!r}")
-            command_index += 1
+                expected = self._expected[command_index]
+
+                if expected != command_output:
+                    raise AssertionError(f"{command}: Expected {expected !r}, but got {command_output!r}")
 
     def __del__(self):
         if self._do_it_not_called:
