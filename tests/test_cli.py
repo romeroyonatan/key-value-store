@@ -7,213 +7,95 @@ from keyvaluestore.system import KeyValueStoreSystem
 
 
 class CliTests(TestCase):
-    def test_show_help_at_the_begginng(self):
-        cli_input = io.StringIO()
-        cli_input.seek(0)
-
-        cli_output = io.StringIO()
-
-        cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
-        cli.run()
-
-        actual = cli_output.getvalue()
-        expected = KeyValueStoreCLI.HELP
-
-        self.assertEqual(actual, expected)
-
     def test_set_and_get_values(self):
-        commands = """
-        BEGIN
-        SET hello world
-        COMMIT
-        BEGIN
-        GET hello
-        COMMIT
-        END
-        """
-
-        expected = textwrap.dedent(
-            """
-            OK
-            hello=world
-            OK
-            OK
-            world
-            OK
-            Good bye
-            """
-        ).strip()
-        cli_input = io.StringIO()
-        cli_input.write(commands)
-        cli_input.seek(0)
-
-        cli_output = io.StringIO()
-
-        cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
-        cli.run()
-
-        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
-
-        self.assertEqual(actual, expected)
+        (
+            given_a_CLI()
+            .type("BEGIN")
+            .type("SET hello world")
+            .expect("hello=world")
+            .type("COMMIT")
+            .type("BEGIN")
+            .type("GET hello")
+            .expect("world")
+            .type("COMMIT")
+            .type("END")
+            .do_it()
+        )
 
     def test_count_keys_with_the_same_value(self):
-        commands = """
-        BEGIN
-        SET lucky-number 42
-        SET answer-to-all-things 42
-        NUMEQUALTO 42
-        COMMIT
-        END
-        """
-
-        expected = textwrap.dedent(
-            """
-            OK
-            lucky-number=42
-            answer-to-all-things=42
-            2
-            OK
-            Good bye
-            """
-        ).strip()
-        cli_input = io.StringIO()
-        cli_input.write(commands)
-        cli_input.seek(0)
-
-        cli_output = io.StringIO()
-
-        cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
-        cli.run()
-
-        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
-
-        self.assertEqual(actual, expected)
+        (
+            given_a_CLI()
+            .type("BEGIN")
+            .type("SET lucky-number 42")
+            .type("SET answer-to-all-things 42")
+            .type("NUMEQUALTO 42")
+            .expect("2")
+            .type("END")
+            .do_it()
+        )
 
     def test_unset_values(self):
-        commands = """
-        BEGIN
-        SET hello world
-        UNSET hello
-        COMMIT
-        end
-        """
+        (
+            given_a_CLI()
+            .type("BEGIN")
+            .type("SET hello world")
+            .type("UNSET hello")
+            .type("get hello")
+            .expect("(NULL)")
+            .type("END")
+            .do_it()
+        )
 
-        expected = textwrap.dedent(
-            """
-            OK
-            hello=world
-            OK
-            OK
-            Good bye
-            """
-        ).strip()
-        cli_input = io.StringIO()
-        cli_input.write(commands)
-        cli_input.seek(0)
-
-        cli_output = io.StringIO()
-
-        cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
-        cli.run()
-
-        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
-
-        self.assertEqual(actual, expected)
 
     def test_display_an_error_is_transaction_is_missing(self):
-        commands = """
-        SET hello world
-        GET hello
-        UNSET hello
-        NUMEQUALTO world
-        COMMIT
-        """
-
-        expected = textwrap.dedent(
-            """
-            ERROR: Enter BEGIN command to start
-            ERROR: Enter BEGIN command to start
-            ERROR: Enter BEGIN command to start
-            ERROR: Enter BEGIN command to start
-            ERROR: Enter BEGIN command to start
-            """
-        ).strip()
-        cli_input = io.StringIO()
-        cli_input.write(commands)
-        cli_input.seek(0)
-
-        cli_output = io.StringIO()
-
-        cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
-        cli.run()
-
-        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
-
-        self.assertEqual(actual, expected)
+        (
+            given_a_CLI()
+            .type("SET hello world")
+            .expect("ERROR: Enter BEGIN command to start")
+            .type("get hello")
+            .expect("ERROR: Enter BEGIN command to start")
+            .type("UNSET hello")
+            .expect("ERROR: Enter BEGIN command to start")
+            .type("NUMEQUALTO world")
+            .expect("ERROR: Enter BEGIN command to start")
+            .type("COMMIT")
+            .expect("ERROR: Enter BEGIN command to start")
+            .type("ROLLBACK")
+            .expect("ERROR: Enter BEGIN command to start")
+            .do_it()
+        )
 
     def test_unknown_command(self):
-        commands = """
-        beggint
-        """
-
-        expected = textwrap.dedent(
-            """
-            ERROR: Unknown command 'BEGGINT'
-            """
-        ).strip()
-        cli_input = io.StringIO()
-        cli_input.write(commands)
-        cli_input.seek(0)
-
-        cli_output = io.StringIO()
-
-        cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
-        cli.run()
-
-        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
-
-        self.assertEqual(actual, expected)
+        (
+            given_a_CLI()
+            .type("banana")
+            .expect("ERROR: Unknown command 'BANANA'")
+            .do_it()
+        )
 
     def test_validate_parameters(self):
-        commands = """
-        SET hello
-        SET hello word world
-        GET
-        GET hello world
-        UNSET
-        UNSET hello world
-        NUMEQUALTO
-        COMMIT a
-        BEGIN a
-        END a
-        """
-
-        expected = textwrap.dedent(
-            """
-            ERROR: Expected 2 arguments but got 1
-            ERROR: Expected 2 arguments but got 3
-            ERROR: Expected 1 arguments but got 0
-            ERROR: Expected 1 arguments but got 2
-            ERROR: Expected 1 arguments but got 0
-            ERROR: Expected 1 arguments but got 2
-            ERROR: Expected 1 arguments but got 0
-            ERROR: Expected 0 arguments but got 1
-            ERROR: Expected 0 arguments but got 1
-            ERROR: Expected 0 arguments but got 1
-            """
-        ).strip()
-        cli_input = io.StringIO()
-        cli_input.write(commands)
-        cli_input.seek(0)
-
-        cli_output = io.StringIO()
-
-        cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
-        cli.run()
-
-        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
-
-        self.assertEqual(actual, expected)
+        (
+            given_a_CLI()
+            .type("SET hello")
+            .expect("ERROR: Expected 2 arguments but got 1")
+            .type("SET hello world world")
+            .expect("ERROR: Expected 2 arguments but got 3")
+            .type("GET")
+            .expect("ERROR: Expected 1 arguments but got 0")
+            .type("UNSET")
+            .expect("ERROR: Expected 1 arguments but got 0")
+            .type("UNSET hello world")
+            .expect("ERROR: Expected 1 arguments but got 2")
+            .type("NUMEQUALTO")
+            .expect("ERROR: Expected 1 arguments but got 0")
+            .type("COMMIT a")
+            .expect("ERROR: Expected 0 arguments but got 1")
+            .type("BEGIN a")
+            .expect("ERROR: Expected 0 arguments but got 1")
+            .type("END a")
+            .expect("ERROR: Expected 0 arguments but got 1")
+            .do_it()
+        )
 
     def test_help(self):
         commands = """
@@ -235,137 +117,84 @@ class CliTests(TestCase):
         self.assertEqual(actual, expected)
 
     def test_rollback(self):
-        commands = """
-        BEGIN
-        SET hello world
-        COMMIT
-        BEGIN
-        SET hello you
-        ROLLBACK
-        GET hello
-        END
-        """
-
-        expected = textwrap.dedent(
-            """
-            OK
-            hello=world
-            OK
-            OK
-            hello=you
-            OK
-            world
-            Good bye
-            """
-        ).strip()
-        cli_input = io.StringIO()
-        cli_input.write(commands)
-        cli_input.seek(0)
-
-        cli_output = io.StringIO()
-
-        cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
-        cli.run()
-
-        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
-
-        self.assertEqual(actual, expected)
-
-    def test_get_an_inexistent_key_display_null(self):
-        commands = """
-        BEGIN
-        GET nonexistent
-        END
-        """
-
-        expected = textwrap.dedent(
-            """
-            OK
-            (NULL)
-            Good bye
-            """
-        ).strip()
-        cli_input = io.StringIO()
-        cli_input.write(commands)
-        cli_input.seek(0)
-
-        cli_output = io.StringIO()
-
-        cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
-        cli.run()
-
-        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
-
-        self.assertEqual(actual, expected)
+        (
+            given_a_CLI()
+            .type("BEGIN")
+            .type("SET hello world")
+            .type("COMMIT")
+            .type("BEGIN")
+            .type("SET hello you")
+            .type("ROLLBACK")
+            .expect("OK")
+            .type("GET hello")
+            .expect("world")
+            .type("END")
+            .do_it()
+        )
 
     def test_unset_in_a_transaction(self):
-        commands = """
-        BEGIN
-        SET hello world
-        COMMIT
-        BEGIN
-        UNSET hello
-        GET hello
-        END
-        """
-
-        expected = textwrap.dedent(
-            """
-            OK
-            hello=world
-            OK
-            OK
-            OK
-            (NULL)
-            Good bye
-            """
-        ).strip()
-        cli_input = io.StringIO()
-        cli_input.write(commands)
-        cli_input.seek(0)
-
-        cli_output = io.StringIO()
-
-        cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
-        cli.run()
-
-        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
-
-        self.assertEqual(actual, expected)
+        (
+            given_a_CLI()
+            .type("BEGIN")
+            .type("SET hello world")
+            .type("COMMIT")
+            .type("BEGIN")
+            .type("UNSET hello")
+            .type("GET hello")
+            .expect("(NULL)")
+            .type("END")
+            .do_it()
+        )
 
     def test_rollback_unset(self):
-        commands = """
-        BEGIN
-        SET hello world
-        COMMIT
-        BEGIN
-        UNSET hello
-        ROLLBACK
-        GET hello
-        END
-        """
+        (
+            given_a_CLI()
+            .type("BEGIN")
+            .type("SET hello world")
+            .type("COMMIT")
+            .type("BEGIN")
+            .type("UNSET hello")
+            .type("ROLLBACK")
+            .type("GET hello")
+            .expect("world")
+            .type("END")
+            .do_it()
+        )
 
-        expected = textwrap.dedent(
-            """
-            OK
-            hello=world
-            OK
-            OK
-            OK
-            OK
-            world
-            Good bye
-            """
-        ).strip()
-        cli_input = io.StringIO()
-        cli_input.write(commands)
-        cli_input.seek(0)
 
+class CLITestRunner:
+    def __init__(self):
+        self._commands = []
+        self._expected = {}
+        self._do_it_not_called = True
+
+    def type(self, command) -> "CLITestRunner":
+        self._commands.append(command)
+        return self
+
+    def expect(self, expected_output) -> "CLITestRunner":
+        command_index = len(self._commands)
+        self._expected[command_index] = expected_output
+        return self
+
+    def do_it(self):
+        self._do_it_not_called = False
+        cli_input = io.StringIO(initial_value="\n".join(self._commands))
         cli_output = io.StringIO()
-
         cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
         cli.run()
+        output = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :]
+        command_index = 1
+        for line in output.split("\n"):
+            if command_index in self._expected and self._expected[command_index] != line:
+                command = self._commands[command_index - 1]
+                raise AssertionError(f"{command}: Expected {self._expected[command_index]!r}, but got {line!r}")
+            command_index += 1
 
-        actual = cli_output.getvalue()[len(KeyValueStoreCLI.HELP) :].strip()
+    def __del__(self):
+        if self._do_it_not_called:
+            raise AssertionError("You forgot to call do_it()")
 
-        self.assertEqual(actual, expected)
+
+def given_a_CLI() -> CLITestRunner:
+    return CLITestRunner()
