@@ -26,12 +26,11 @@ class KeyValueStoreCLI:
                                    transaction.
                 HELP            🔸 show this help message
                 END             🔸 end the program
-        Enter the command:  (HELP):
         """
     )
 
     ERROR_TRANSACTION_IS_MISSING = "ERROR: Enter BEGIN command to start"
-    PROMPT = ">>> "
+    PROMPT = "Enter the command:  (HELP): "
 
     def __init__(self, system, cli_input=sys.stdin, cli_output=sys.stdout):
         self._input = cli_input
