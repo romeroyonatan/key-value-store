@@ -137,20 +137,5 @@ class KeyValueStoreCLI:
 
 
 class NoTransaction:
-    def set(self, key, value):
-        raise TransactionIsMissing
-
-    def get(self, value):
-        raise TransactionIsMissing
-
-    def number_of_keys_with_value(self, value):
-        raise TransactionIsMissing
-
-    def unset(self, key):
-        raise TransactionIsMissing
-
-    def commit(self):
-        raise TransactionIsMissing
-
-    def rollback(self):
+    def __getattr__(self, item):
         raise TransactionIsMissing
