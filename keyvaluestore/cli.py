@@ -1,8 +1,6 @@
 import sys
 import textwrap
 
-from keyvaluestore.system import KeyValueStoreSystem
-
 
 class TransactionIsMissing(RuntimeError):
     """Raised when the user does not start with BEGIN command"""
