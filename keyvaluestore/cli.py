@@ -1,5 +1,8 @@
 import sys
 import textwrap
+from typing import Union
+
+from keyvaluestore.system import KeyValueStoreSystem, Transaction
 
 
 class TransactionIsMissing(RuntimeError):
@@ -30,7 +33,9 @@ class KeyValueStoreCLI:
     ERROR_TRANSACTION_IS_MISSING = "ERROR: Enter BEGIN command to start"
     PROMPT = "Enter the command:  (HELP): "
 
-    def __init__(self, system, cli_input=sys.stdin, cli_output=sys.stdout):
+    _transaction: Union[Transaction, "NoTransaction"]
+
+    def __init__(self, system: KeyValueStoreSystem, cli_input=sys.stdin, cli_output=sys.stdout):
         self._input = cli_input
         self._output = cli_output
         self._system = system
