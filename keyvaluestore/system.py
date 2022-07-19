@@ -1,3 +1,4 @@
+from abc import ABCMeta, abstractmethod
 from typing import Any
 
 
@@ -78,7 +79,21 @@ class Transaction:
         return last_operation.number_of_keys_with_value(a_value)
 
 
-class SetKey:
+class Operation(metaclass=ABCMeta):
+    @abstractmethod
+    def apply_on(self, system):
+        """Apply the operation in a system"""
+
+    @abstractmethod
+    def get(self, key, default_if_key_does_not_exist):
+        """Get the value associated with a key"""
+
+    @abstractmethod
+    def number_of_keys_with_value(self, a_value):
+        """Get the number of keys with the same value"""
+
+
+class SetKey(Operation):
     def __init__(self, key, old_value, new_value, previous_operation):
         self._key = key
         self._old_value = old_value
@@ -99,7 +114,7 @@ class SetKey:
         return self._previous_operatation.number_of_keys_with_value(a_value)
 
 
-class Unset:
+class Unset(Operation):
     def __init__(self, key, old_value, previous_operation):
         self._key = key
         self._old_value = old_value
