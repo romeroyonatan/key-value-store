@@ -156,7 +156,7 @@ class CLITestRunner:
     def __init__(self):
         self._commands = []
         self._expected = {}
-        self._do_it_not_called = True
+        self._do_it_called = False
 
     def type(self, command) -> "CLITestRunner":
         self._commands.append(command)
@@ -168,7 +168,7 @@ class CLITestRunner:
         return self
 
     def do_it(self) -> None:
-        self._do_it_not_called = False
+        self._do_it_called = True
         cli_input = io.StringIO(initial_value="\n".join(self._commands))
         cli_output = io.StringIO()
         cli = KeyValueStoreCLI(KeyValueStoreSystem(), cli_input, cli_output)
@@ -205,8 +205,7 @@ class CLITestRunner:
                     raise AssertionError(f"{command}: Expected {expected_output !r}, but got {command_output!r}")
 
     def __del__(self):
-        if self._do_it_not_called:
-            raise AssertionError("You forgot to call do_it()")
+        assert self._do_it_called, "You forgot to call do_it()"
 
 
 def given_a_CLI() -> CLITestRunner:
