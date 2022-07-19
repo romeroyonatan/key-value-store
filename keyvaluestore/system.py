@@ -42,27 +42,25 @@ class KeyValueStoreSystem:
         return sum(value == a_value for value in self._storage.values())
 
 
-
 class Transaction:
     def __init__(self, system: KeyValueStoreSystem):
         self._system = system
         self._init()
 
     def set(self, key, value):
-        if key in self._unset_keys:
-            self._unset_keys.remove(key)
+        previous_operation = self._get_last_operation()
         old_value = self.get(key, KeyValueStoreSystem.NEW_KEY)
-        self._operations.append(SetKey(key, old_value=old_value, new_value=value))
+        self._operations.append(
+            SetKey(key, old_value=old_value, new_value=value, previous_operation=previous_operation)
+        )
         self._local_storage[key] = value
 
     def get(self, key, default_if_key_does_not_exist: Any = KeyError):
-        if key in self._unset_keys:
-            if default_if_key_does_not_exist is KeyError:
-                raise KeyError(key)
-            return default_if_key_does_not_exist
-        if key in self._local_storage:
-            return self._local_storage[key]
-        return self._system.get(key, default_if_key_does_not_exist)
+        last_operation = self._get_last_operation()
+        return last_operation.get(key, default_if_key_does_not_exist)
+
+    def _get_last_operation(self):
+        return self._operations[-1] if self._operations else self._system
 
     def commit(self):
         self._system.commit(self._operations)
@@ -77,11 +75,9 @@ class Transaction:
         self._unset_keys = set()
 
     def unset(self, key):
+        previous_operation = self._get_last_operation()
         old_value = self.get(key, KeyValueStoreSystem.NEW_KEY)
-        if key in self._local_storage:
-            del self._local_storage[key]
-        self._operations.append(Unset(key, old_value=old_value))
-        self._unset_keys.add(key)
+        self._operations.append(Unset(key, old_value=old_value, previous_operation=previous_operation))
 
     def number_of_keys_with_value(self, a_value):
         return sum(
@@ -90,19 +86,33 @@ class Transaction:
 
 
 class SetKey:
-    def __init__(self, key, old_value, new_value):
+    def __init__(self, key, old_value, new_value, previous_operation):
         self._key = key
         self._old_value = old_value
         self._new_value = new_value
+        self._previous_operatation = previous_operation
 
     def apply_on(self, system):
         system.set_key(self._key, self._old_value, self._new_value)
 
+    def get(self, key, default_if_key_does_not_exist):
+        if key == self._key:
+            return self._new_value
+        return self._previous_operatation.get(key, default_if_key_does_not_exist)
+
 
 class Unset:
-    def __init__(self, key, old_value):
+    def __init__(self, key, old_value, previous_operation):
         self._key = key
         self._old_value = old_value
+        self._previous_operatation = previous_operation
 
     def apply_on(self, system):
         system.unset_key(self._key, self._old_value)
+
+    def get(self, key, default_if_key_does_not_exist):
+        if key == self._key:
+            if default_if_key_does_not_exist is KeyError:
+                raise KeyError(key)
+            return default_if_key_does_not_exist
+        return self._previous_operatation.get(key, default_if_key_does_not_exist)
