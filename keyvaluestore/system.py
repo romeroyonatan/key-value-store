@@ -45,7 +45,7 @@ class KeyValueStoreSystem:
 class Transaction:
     def __init__(self, system: KeyValueStoreSystem):
         self._system = system
-        self._init()
+        self._operations = []
 
     def set(self, key, value):
         previous_operation = self._get_last_operation()
@@ -53,7 +53,6 @@ class Transaction:
         self._operations.append(
             SetKey(key, old_value=old_value, new_value=value, previous_operation=previous_operation)
         )
-        self._local_storage[key] = value
 
     def get(self, key, default_if_key_does_not_exist: Any = KeyError):
         last_operation = self._get_last_operation()
@@ -64,15 +63,10 @@ class Transaction:
 
     def commit(self):
         self._system.commit(self._operations)
-        self._init()
+        self._operations = []
 
     def rollback(self):
-        self._init()
-
-    def _init(self):
-        self._local_storage = {}
         self._operations = []
-        self._unset_keys = set()
 
     def unset(self, key):
         previous_operation = self._get_last_operation()
@@ -80,9 +74,8 @@ class Transaction:
         self._operations.append(Unset(key, old_value=old_value, previous_operation=previous_operation))
 
     def number_of_keys_with_value(self, a_value):
-        return sum(
-            value == a_value for value in self._local_storage.values()
-        ) + self._system.number_of_keys_with_value(a_value)
+        last_operation = self._get_last_operation()
+        return last_operation.number_of_keys_with_value(a_value)
 
 
 class SetKey:
@@ -100,6 +93,11 @@ class SetKey:
             return self._new_value
         return self._previous_operatation.get(key, default_if_key_does_not_exist)
 
+    def number_of_keys_with_value(self, a_value):
+        if a_value == self._new_value:
+            return 1 + self._previous_operatation.number_of_keys_with_value(a_value)
+        return self._previous_operatation.number_of_keys_with_value(a_value)
+
 
 class Unset:
     def __init__(self, key, old_value, previous_operation):
@@ -116,3 +114,8 @@ class Unset:
                 raise KeyError(key)
             return default_if_key_does_not_exist
         return self._previous_operatation.get(key, default_if_key_does_not_exist)
+
+    def number_of_keys_with_value(self, a_value):
+        if a_value == self._old_value:
+            return -1 + self._previous_operatation.number_of_keys_with_value(a_value)
+        return self._previous_operatation.number_of_keys_with_value(a_value)
