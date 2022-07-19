@@ -40,49 +40,55 @@ class KeyValueStoreCLI:
         self._output = cli_output
         self._system = system
         self._transaction = NoTransaction()
-        self._is_running = True
+        self._is_still_running = True
+        self._register_commands()
+
+    def _register_commands(self):
+        self._commands = {
+            "BEGIN": self._begin,
+            "SET": self._set,
+            "GET": self._get,
+            "UNSET": self._unset,
+            "NUMEQUALTO": self._numequalto,
+            "COMMIT": self._commit,
+            "ROLLBACK": self._rollback,
+            "HELP": self._help,
+            "END": self._end,
+        }
 
     def run(self):
-        self._output.write(KeyValueStoreCLI.HELP)
-        self._output.write(KeyValueStoreCLI.PROMPT)
-        self._output.flush()
+        self._help()
+        self._prompt()
         line = self._input.readline()
-        while self._is_running and line:
+        while self._is_still_running and line:
             line = line.strip()
             if line:
                 self._process_line(line)
-            if self._is_running:
-                self._output.write(KeyValueStoreCLI.PROMPT)
-                self._output.flush()
+            if self._is_still_running:
+                self._prompt()
                 line = self._input.readline()
+
+    def _prompt(self):
+        self._output.write(KeyValueStoreCLI.PROMPT)
+        self._output.flush()
 
     def _process_line(self, line):
         command = line.split()[0].upper()
+        if command in self._commands:
+            self._execute_command(command, line)
+        else:
+            self._output.write(f"ERROR: Unknown command '{command}'\n")
+
+    def _execute_command(self, command, line):
         try:
-            if command == "BEGIN":
-                self._begin(line)
-            elif command == "SET":
-                self._set(line)
-            elif command == "GET":
-                self._get(line)
-            elif command == "UNSET":
-                self._unset(line)
-            elif command == "NUMEQUALTO":
-                self._numequalto(line)
-            elif command == "COMMIT":
-                self._commit(line)
-            elif command == "ROLLBACK":
-                self._rollback(line)
-            elif command == "END":
-                self._end(line)
-            elif command == "HELP":
-                self._output.write(f"{KeyValueStoreCLI.HELP}")
-            else:
-                self._output.write(f"ERROR: Unknown command '{command}'\n")
+            self._commands[command](line)
         except TransactionIsMissing:
             self._output.write(f"{KeyValueStoreCLI.ERROR_TRANSACTION_IS_MISSING}\n")
         except ValueError as error:
             self._output.write(f"ERROR: {error}\n")
+
+    def _help(self, _=""):
+        self._output.write(f"{KeyValueStoreCLI.HELP}")
 
     def _begin(self, line):
         self._assert_number_of_arguments_equal_to(0, line)
@@ -129,7 +135,7 @@ class KeyValueStoreCLI:
 
     def _end(self, line):
         self._assert_number_of_arguments_equal_to(0, line)
-        self._is_running = False
+        self._is_still_running = False
         self._output.write("Good bye\n")
 
     def _assert_number_of_arguments_equal_to(self, expected, line):
