@@ -101,6 +101,8 @@ class CliTests(TestCase):
             .type("COMMIT")
             .type("BEGIN")
             .type("SET hello you")
+            .type("GET hello")
+            .expect("you")
             .type("ROLLBACK")
             .expect("OK")
             .type("GET hello")
