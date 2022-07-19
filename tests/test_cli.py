@@ -178,16 +178,20 @@ class CLITestRunner:
         self._check_assertions(command_outputs)
 
     def _get_command_outputs(self, cli_output):
+        cli_output.seek(0)
         partial_output = []
         command_outputs = []
-        cli_output.seek(0)
-        for line in cli_output.readlines():
+
+        line = cli_output.readline()
+        while line:
             line = line.removesuffix("\n")
-            if line.startswith(KeyValueStoreCLI.PROMPT):
+            if not line.startswith(KeyValueStoreCLI.PROMPT):
+                partial_output.append(line)
+            else:
                 command_outputs.append("\n".join(partial_output))
                 partial_output = [line.removeprefix(KeyValueStoreCLI.PROMPT)]
-            else:
-                partial_output.append(line)
+            line = cli_output.readline()
+
         assert command_outputs, "Command output expected"
         return command_outputs
 
